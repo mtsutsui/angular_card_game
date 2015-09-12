@@ -1,2 +1,153 @@
-<html>
+<!doctype html>
+<html ng-app="cardApp">
+	<head>
+	<title>card gamexxx</title>
+	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.4/angular.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="css/gameStyle.css">
+	</head>
+	
+	<body ng-controller="CardController">
+	
+		<h2>Card Game</h2>
+		<input type="button" value="Shuffle" ng-disabled="!gameOver" ng-click="shuffleDeck()" />
+		<div class="container deck_wrapper">
+			<div ng-repeat="card in cardDeck" ng-class="{'good':card.match, 'bad':card.mismatch}" 
+				 class="card" ng-click="handleFlip(card)" >
+				<div ng-show="card.faceup"><p>{{card.number}}</p></div>
+			</div>
+		</div>
+		<div style="clear:both;"><label>{{message}}</label></div>
+		<button ng-show="selectedPair.length == 2" ng-disabled="gameOver || mismatchStillOpen()" ng-click="resetMismatch()" >Please Clear the Mismatch</button>
+	
+		<script>
+		var cardApp = angular.module("cardApp", []);
+		cardApp.controller('CardController', function ($scope){
+			console.log("CardController");
+					
+			var shuffle = function (array) {
+			  var currentIndex = array.length, temporaryValue, randomIndex ;
+			  // While there remain elements to shuffle...
+			  while (0 !== currentIndex) {
+				// Pick a remaining element...
+				randomIndex = Math.floor(Math.random() * currentIndex);
+				currentIndex -= 1;
+				// And swap it with the current element.
+				temporaryValue = array[currentIndex];
+				array[currentIndex] = array[randomIndex];
+				array[randomIndex] = temporaryValue;
+			  }
+			  return array;
+			};	
+				
+			$scope.gameOver = true;	
+			var numCards = 10;	
+			$scope.cardDeck = [];
+			
+			var Card = function(id, number){  //card constructor
+				this.id = id;
+				this.number = number;
+				this.faceup = false;
+				this.matched = false;
+				//this.flipCount = 0;
+			};
+			for (var i = 0; i < numCards; i = i + 2) {
+				var card1 = new Card(i, i);
+				$scope.cardDeck.push(card1);
+				var card2 = new Card(i+1, i);
+				$scope.cardDeck.push(card2);
+			};
+				
+			//initially all cards face up before shuffle
+			$scope.cardDeck.forEach(function(card){card.faceup = true});
+			
+			$scope.shuffleToggled = false;
+			$scope.shuffleDeck = function(){
+				console.log("shuffleDeck");
+				shuffle($scope.cardDeck);
+				$scope.shuffleToggled = true;
+				$scope.gameOver = false;
+				$scope.message = "";
+				//all face down, none matched yet
+				$scope.cardDeck.forEach(function(card){
+					card.faceup = false;
+					card.match = false;
+				});
+			};
+
+
+			$scope.message = '';
+			$scope.selectedPair = [];  //holds 2 cards selected to help match logic
+			
+			$scope.handleFlip = function(card){
+				console.log("handleFlip card = " + JSON.stringify(card));
+				if (!$scope.shuffleToggled){
+					alert("Please shuffle card deck");
+					return;
+				};
+				if ($scope.gameOver){
+					$scope.message = 'Game is over.  Shuffle for another game';
+					return;
+				};
+				if ( card.match || ( $scope.selectedPair[0] && $scope.selectedPair[0].id == card.id ) ) {
+					alert("Select another card");
+					return;
+				};
+				//if mismatched pair still open face up, alert to reset/close
+				if ( $scope.cardDeck.find(function(card){ return card.mismatch==true; }) ) {
+					alert("Please clear the mismatched pair");
+					return
+				};				
+				
+				$scope.message = '';
+				//card.flipCount ++;
+				card.faceup = true;
+				$scope.selectedPair.push(card);
+				
+				if ($scope.selectedPair.length == 1){
+					return;
+				}else{
+					if ($scope.selectedPair[0].number == $scope.selectedPair[1].number){
+						$scope.message = 'Match!';
+						$scope.selectedPair[0].match = $scope.selectedPair[1].match = true;
+						$scope.selectedPair = [];  //empty out the temp card array
+						
+						//check if all cards are matched complete so can notify game over
+						var count = 0;
+						$scope.cardDeck.forEach(function(card){
+							if (card.match) 
+								count++;
+						});
+						if (count == $scope.cardDeck.length){
+							$scope.gameOver = true;
+							$scope.message = 'All Matched! Game over';
+						}
+					}else{
+						$scope.message = 'Mismatch!';
+						$scope.selectedPair[0].mismatch = $scope.selectedPair[1].mismatch = true; 
+					}
+				}
+			};
+			
+			$scope.mismatchStillOpen = function(){
+				//console.log("hit mismatchStillOpen");
+				return !$scope.cardDeck.find(function(card){return card.mismatch;});
+			};
+			
+			$scope.resetMismatch = function(){
+				console.log("hit resetMismatch");
+				$scope.selectedPair = []; //empty out the temp mismatch pair
+				$scope.cardDeck.forEach(function(card){
+					card.mismatch = false;
+					if (!card.match){
+						card.faceup = false;  //face down unless matched
+					};
+				});
+				$scope.message='';
+			};
+			
+		});
+		</script>
+	</body>
 </html>

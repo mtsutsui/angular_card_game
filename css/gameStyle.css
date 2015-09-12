@@ -1,0 +1,11 @@
+p { text-align: center }
+.card{
+	width:50px;
+	height:80px;
+	border:solid;
+	margin:2px;
+	float:left
+}
+.deck_wrapper{ width:300px; }
+.good{ background-color:lightgreen }
+.bad{ background-color:yellow }
